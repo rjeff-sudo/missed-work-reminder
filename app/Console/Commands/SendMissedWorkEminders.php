@@ -6,7 +6,6 @@ use Illuminate\Console\Command;
 use App\Models\User;
 use App\Mail\MissedWorkReminder;
 use Illuminate\Support\Facades\Mail;
-use Carbon\Carbon;
 
 class SendMissedWorkEminders extends Command
 {
@@ -15,29 +14,25 @@ class SendMissedWorkEminders extends Command
 
     public function handle()
     {
-        $today = Carbon::today()->toDateString();
+        $this->info("Checking attendance for " . User::count() . " users...");
 
-        $users = User::all();
+        $absentUsers = User::whereDoesntHave('attendance', function ($query) {
+            $query->whereDate('date', now()->today());
+        })->get();
 
-        $count = 0;
-
-        foreach ($users as $user) {
-            $attended = $user->attendance()
-                ->whereDate('date', $today)
-                ->exists();
-
-            if (!$attended) {
-                Mail::to($user->email)->send(new MissedWorkReminder($user));
-                $this->info("Reminder sent to: " . $user->name);
-                $count++;
-                sleep(15);
-            }
+        if ($absentUsers->isEmpty()) {
+            $this->info("All users attended today. No reminders needed.");
+            return;
         }
 
-        if ($count === 0) {
-            $this->info("No missed users found for today.");
-        } else {
-            $this->info("Total reminders sent: " . $count);
+        $this->info("Found " . $absentUsers->count() . " absent users. Sending emails...");
+
+        foreach ($absentUsers as $user) {
+            Mail::to($user->email)->send(new MissedWorkReminder($user));
+            $this->info("Reminder sent to: " . $user->name);
+            sleep(15);
         }
+
+        $this->info("Done. Total reminders sent: " . $absentUsers->count());
     }
 }
