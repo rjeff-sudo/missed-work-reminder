@@ -30,6 +30,7 @@ class SendMissedWorkEminders extends Command
                 Mail::to($user->email)->send(new MissedWorkReminder($user));
                 $this->info("Reminder sent to: " . $user->name);
                 $count++;
+                sleep(15);
             }
         }
 
