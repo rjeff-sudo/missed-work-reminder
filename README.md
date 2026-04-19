@@ -8,6 +8,7 @@ A minimal Laravel application that automatically sends email reminders to employ
 - Detects absences using Eloquent's `whereDoesntHave` — filtering is done at the database level, not in PHP
 - Sends automated email reminders only to absent employees
 - Built with a custom Artisan console command
+- Queue worker processes emails in the background — no blocking or artificial delays
 - Fully containerized with Docker — no local PHP or MySQL setup required
 
 ## Tech Stack
@@ -38,14 +39,14 @@ resources/views/emails/
 └── missed-work-reminder.blade.php               # Email template
 
 Dockerfile                                       # PHP 8.3 container definition
-docker-compose.yml                               # Laravel + MySQL service orchestration
+docker-compose.yml                               # Laravel + MySQL + Queue service orchestration
 ```
 
 ## How It Works
 
 ```
-Docker spins up Laravel + MySQL → Migrations run → Users seeded →
-Command runs → Anti-join query finds absent users → Emails sent
+Docker spins up Laravel + MySQL + Queue Worker → Migrations run → Users seeded →
+Command runs → Anti-join query finds absent users → Emails pushed to queue → Queue worker sends them
 ```
 
 The system uses Eloquent's `whereDoesntHave` method to perform an **anti-join** against the attendance table. This means only users with no attendance record for the current date are returned — the filtering happens entirely at the SQL level, making it efficient even at scale.
@@ -61,6 +62,7 @@ $absentUsers = User::whereDoesntHave('attendance', function ($query) {
 ### Requirements
 - [Docker](https://docs.docker.com/get-docker/)
 - [Docker Compose](https://docs.docker.com/compose/)
+- A free [Mailtrap](https://mailtrap.io) account for email testing
 
 ### 1. Clone the repository
 
@@ -69,10 +71,37 @@ git clone https://github.com/rjeff-sudo/missed-work-reminder.git
 cd missed-work-reminder
 ```
 
-### 2. Start the containers
+### 2. Set up your environment file
 
 ```bash
-docker compose up --build
+cp .env.example .env
+```
+
+Open the `.env` file and update the Mailtrap credentials with your own:
+
+```env
+MAIL_MAILER=smtp
+MAIL_HOST=sandbox.smtp.mailtrap.io
+MAIL_PORT=2525
+MAIL_USERNAME=your_mailtrap_username
+MAIL_PASSWORD=your_mailtrap_password
+MAIL_ENCRYPTION=tls
+MAIL_FROM_ADDRESS="hello@example.com"
+MAIL_FROM_NAME="${APP_NAME}"
+```
+
+To get your Mailtrap credentials:
+1. Sign up at [mailtrap.io](https://mailtrap.io)
+2. Go to **Email Testing** → **Inboxes** → **My Inbox**
+3. Click **SMTP Settings** → select **Laravel 9+** from the dropdown
+4. Copy the `MAIL_USERNAME` and `MAIL_PASSWORD` values into your `.env`
+
+> The database credentials are already pre-configured in `.env.example` for Docker — you do not need to change them.
+
+### 3. Start the containers
+
+```bash
+sudo docker compose up --build
 ```
 
 This automatically:
@@ -83,33 +112,45 @@ This automatically:
 - Starts the Laravel development server at `http://localhost:8000`
 - Starts a queue worker that processes outgoing emails in the background
 
-### 3. Run the reminder command
+### 4. Run the reminder command
 
 Open a second terminal and run:
 
 ```bash
-docker compose exec app php artisan remind:missed-work
+cd missed-work-reminder
+sudo docker compose exec app php artisan remind:missed-work
 ```
 
 ### Expected output
 
 ```
-Checking attendance for 3 users...
-Found 2 absent users. Sending emails...
+Checking attendance for 5 users...
+Found 3 absent users. Sending emails...
 Reminder sent to: Alice Wanjiru
 Reminder sent to: Brian Omondi
-Done. Total reminders sent: 2
+Reminder sent to: David Kamau
+Done. Total reminders sent: 3
 ```
 
-Jeff is skipped because he has an attendance record for today. Alice and Brian have no record so they receive reminder emails.
+Jeff and Sarah are skipped because they have attendance records for today. Alice, Brian and David have no record so they receive reminder emails.
 
-## Email Testing
-
-Emails are captured by [Mailtrap](https://mailtrap.io) and never sent to real inboxes. To view sent emails:
+### 5. View sent emails
 
 1. Log in to your Mailtrap account
 2. Go to **Email Testing** → **Inboxes** → **My Inbox**
-3. You will see the reminder emails sent to absent users
+3. You will see the reminder emails arriving one by one
+
+## Sample Data
+
+The seeders create the following test scenario:
+
+| Employee | Attendance Today | Action |
+|---|---|---|
+| Jeff Otieno | ✅ Present | No email sent |
+| Alice Wanjiru | ❌ Absent | Reminder email sent |
+| Brian Omondi | ❌ Absent | Reminder email sent |
+| Sarah Akinyi | ✅ Present | No email sent |
+| David Kamau | ❌ Absent | Reminder email sent |
 
 ## Manual Setup (Without Docker)
 
@@ -171,16 +212,6 @@ Then set up a cron job on your server:
 ```bash
 * * * * * cd /path-to-your-project && php artisan schedule:run >> /dev/null 2>&1
 ```
-
-## Sample Data
-
-The seeders create the following test scenario:
-
-| Employee | Attendance Today | Action |
-|---|---|---|
-| Jeff Otieno | ✅ Present | No email sent |
-| Alice Wanjiru | ❌ Absent | Reminder email sent |
-| Brian Omondi | ❌ Absent | Reminder email sent |
 
 ## Author
 
