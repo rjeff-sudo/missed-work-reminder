@@ -30,7 +30,7 @@ class SendMissedWorkEminders extends Command
         foreach ($absentUsers as $user) {
             Mail::to($user->email)->send(new MissedWorkReminder($user));
             $this->info("Reminder sent to: " . $user->name);
-            sleep(15);
+           
         }
 
         $this->info("Done. Total reminders sent: " . $absentUsers->count());
