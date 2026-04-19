@@ -10,7 +10,7 @@ class AttendanceSeeder extends Seeder
 {
     public function run(): void
     {
-        // Mark Jeff as present today (user_id = 1)
+        // Jeff (user_id = 1) - Present
         DB::table('attendance')->insert([
             'user_id' => 1,
             'date' => Carbon::today()->toDateString(),
@@ -18,8 +18,16 @@ class AttendanceSeeder extends Seeder
             'updated_at' => now(),
         ]);
 
-        // Alice (user_id = 2) and Brian (user_id = 3)
-        // are left with NO attendance record — they missed work
-        $this->command->info('Jeff marked as present. Alice and Brian are absent.');
+        // Sarah (user_id = 4) - Present
+        DB::table('attendance')->insert([
+            'user_id' => 4,
+            'date' => Carbon::today()->toDateString(),
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        // Alice (user_id = 2), Brian (user_id = 3), David (user_id = 5)
+        // left with NO attendance record — they missed work
+        $this->command->info('Jeff and Sarah marked as present. Alice, Brian and David are absent.');
     }
 }
