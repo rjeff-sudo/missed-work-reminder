@@ -1,0 +1,45 @@
+version: '3.8'
+
+services:
+  app:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      DB_CONNECTION: mysql
+      DB_HOST: db
+      DB_PORT: 3306
+      DB_DATABASE: missed_work_reminder
+      DB_USERNAME: laraveluser
+      DB_PASSWORD: laravelpass
+      MAIL_MAILER: smtp
+      MAIL_HOST: sandbox.smtp.mailtrap.io
+      MAIL_PORT: 2525
+      MAIL_USERNAME: 234d0e04237d54
+      MAIL_PASSWORD: fe4f1dbebfd32d
+      MAIL_ENCRYPTION: tls
+      MAIL_FROM_ADDRESS: hello@example.com
+      MAIL_FROM_NAME: MissedWorkReminder
+    depends_on:
+      db:
+        condition: service_healthy
+    command: >
+      sh -c "php artisan migrate --force &&
+             php artisan db:seed --class=UserSeeder --force &&
+             php artisan db:seed --class=AttendanceSeeder --force &&
+             php artisan serve --host=0.0.0.0 --port=8000"
+
+  db:
+    image: mysql:8.0
+    environment:
+      MYSQL_DATABASE: missed_work_reminder
+      MYSQL_USER: laraveluser
+      MYSQL_PASSWORD: laravelpass
+      MYSQL_ROOT_PASSWORD: rootpassword
+    ports:
+      - "3307:3306"
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
