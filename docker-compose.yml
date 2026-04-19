@@ -2,6 +2,7 @@
 
 services:
   app:
+   queue:
     build: .
     ports:
       - "8000:8000"
