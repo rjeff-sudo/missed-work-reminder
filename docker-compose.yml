@@ -16,7 +16,7 @@ services:
       db:
         condition: service_healthy
     command: >
-      sh -c "until php artisan queue:work --tries=3 --sleep=1 2>/dev/null; do
+      sh -c "until php artisan migrate --force 2>/dev/null; do
         echo 'Waiting for database...';
         sleep 3;
       done &&
@@ -36,13 +36,11 @@ services:
       DB_USERNAME: laraveluser
       DB_PASSWORD: laravelpass
     depends_on:
-      db:
-        condition: service_healthy
+      app:
+        condition: service_started
     command: >
-      sh -c "until php artisan queue:work --tries=3 2>/dev/null; do
-        echo 'Waiting for database...';
-        sleep 3;
-      done"
+      sh -c "sleep 30 &&
+      php artisan queue:work --tries=3 --sleep=1"
 
   db:
     image: mysql:8.0
