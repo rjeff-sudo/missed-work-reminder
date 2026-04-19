@@ -19,10 +19,13 @@ services:
       db:
         condition: service_healthy
     command: >
-      sh -c "php artisan migrate --force &&
-             php artisan db:seed --class=UserSeeder --force &&
-             php artisan db:seed --class=AttendanceSeeder --force &&
-             php artisan serve --host=0.0.0.0 --port=8000"
+         sh -c "until php artisan migrate --force 2>/dev/null; do
+         echo 'Waiting for database...';
+         sleep 3;
+         done &&
+         php artisan db:seed --class=UserSeeder --force &&
+         php artisan db:seed --class=AttendanceSeeder --force &&
+         php artisan serve --host=0.0.0.0 --port=8000"
 
   db:
     image: mysql:8.0
