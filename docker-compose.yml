@@ -44,7 +44,7 @@ services:
       - missed-work-network
     command: >
       sh -c "sleep 30 &&
-      php artisan queue:work --tries=3 --sleep=1"
+      php artisan queue:work --tries=3 --sleep=5"
 
   db:
     image: mysql:8.0
