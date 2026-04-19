@@ -81,6 +81,7 @@ This automatically:
 - Runs all migrations
 - Seeds sample users and attendance records
 - Starts the Laravel development server at `http://localhost:8000`
+- Starts a queue worker that processes outgoing emails in the background
 
 ### 3. Run the reminder command
 
