@@ -8,7 +8,7 @@ use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
 
-class MissedWorkReminder extends Mailable
+class MissedWorkReminder extends Mailable implements \Illuminate\Contracts\Queue\ShouldQueue
 {
     use Queueable, SerializesModels;
 
