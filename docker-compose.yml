@@ -56,3 +56,6 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+networks:
+  missed-work-network:
+    driver: bridge
