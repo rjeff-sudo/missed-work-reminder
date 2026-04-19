@@ -15,6 +15,8 @@ services:
     depends_on:
       db:
         condition: service_healthy
+    networks:
+      - missed-work-network
     command: >
       sh -c "until php artisan migrate --force 2>/dev/null; do
         echo 'Waiting for database...';
@@ -38,6 +40,8 @@ services:
     depends_on:
       app:
         condition: service_started
+    networks:
+      - missed-work-network
     command: >
       sh -c "sleep 30 &&
       php artisan queue:work --tries=3 --sleep=1"
@@ -51,11 +55,14 @@ services:
       MYSQL_ROOT_PASSWORD: rootpassword
     ports:
       - "3307:3306"
+    networks:
+      - missed-work-network
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
       interval: 10s
       timeout: 5s
       retries: 5
+
 networks:
   missed-work-network:
     driver: bridge
